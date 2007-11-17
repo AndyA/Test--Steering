@@ -3,12 +3,11 @@ package Test::Steering::Wheel;
 use warnings;
 use strict;
 use TAP::Harness;
-use Test::Builder;
 use Scalar::Util qw(refaddr);
 
 =head1 NAME
 
-Test::Steering::Wheel - Execute test scripts conditionally
+Test::Steering::Wheel - Execute tests and renumber the resulting TAP.
 
 =head1 VERSION
 
@@ -28,9 +27,16 @@ our $VERSION = '0.01';
 
 =head1 DESCRIPTION
 
+Behind the scenes in L<Test::Steering> is a singleton instance of
+C<Test::Steering::Wheel>.
+
+See L<Test::Steering> for more information.
+
 =head1 INTERFACE 
 
 =head2 C<< new >>
+
+Create a new C<Test::Steering::Wheel>.
 
 =cut
 
@@ -40,13 +46,6 @@ sub new {
 
     my $self = bless { test_number_adjust => 0, }, $class;
     return $self;
-}
-
-sub _builder {
-    my $self = shift;
-    my $builder = $self->{_builder} || Test::Builder->new;
-    $builder->plan( 'no_plan' );
-    return $builder;
 }
 
 =for private
@@ -130,7 +129,30 @@ sub _output_result {
         ++$self->{test_number_adjust}, $description );
 }
 
+=for private
+
+Output additional test failures if our subtest had problems.
+
+=cut
+
+sub _parser_postmortem {
+    my ( $self, $parser ) = @_;
+
+    $self->_output_result( 0, "Parse error: $_" )
+      for $parser->parse_errors;
+
+    my ( $wait, $exit ) = ( $parser->wait, $parser->exit );
+    $self->_output_result( 0,
+        "Non-zero status: exit=$exit, wait=$wait" )
+      if $exit || $wait;
+}
+
 =head2 C<< include_tests >>
+
+Run one or more tests. Wildcards will be expanded.
+
+    include_tests( 'xt/vms/*.t' ) if $^O eq 'VMS';
+    include_tests( 'xt/windows/*.t' ) if $^O =~ 'MSWin32';
 
 =cut
 
@@ -146,16 +168,15 @@ sub include_tests {
             %options = ( %options, %$t );
         }
         else {
-            push @real_tests, $t;
+            push @real_tests, glob $t;
         }
     }
-
-    # my $tb = $self->_builder;
 
     my $harness = TAP::Harness->new( \%options );
 
     my $printer = sub {
         my ( $type, $line ) = @_;
+        print "TAP version 13\n" unless $self->{started}++;
         if ( $type eq 'test' ) {
             $line =~ s/(\d+)/$1 + $self->{test_number_adjust}/e;
         }
@@ -191,6 +212,7 @@ sub include_tests {
             );
             $parser->callback(
                 EOF => sub {
+                    $self->_parser_postmortem( $parser );
                     $done->( $parser );
                 }
             );
@@ -209,6 +231,7 @@ sub end_plan {
     my $self = shift;
     if ( my $plan = $self->{test_number_adjust} ) {
         print "1..$plan\n";
+        $self->{test_number_adjust} = 0;
     }
 }
 
