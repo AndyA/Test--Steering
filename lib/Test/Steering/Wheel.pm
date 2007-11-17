@@ -3,7 +3,6 @@ package Test::Steering::Wheel;
 use warnings;
 use strict;
 use TAP::Harness;
-use Test::Builder;
 use Scalar::Util qw(refaddr);
 
 =head1 NAME
@@ -40,13 +39,6 @@ sub new {
 
     my $self = bless { test_number_adjust => 0, }, $class;
     return $self;
-}
-
-sub _builder {
-    my $self = shift;
-    my $builder = $self->{_builder} || Test::Builder->new;
-    $builder->plan( 'no_plan' );
-    return $builder;
 }
 
 =for private
@@ -149,8 +141,6 @@ sub include_tests {
             push @real_tests, $t;
         }
     }
-
-    # my $tb = $self->_builder;
 
     my $harness = TAP::Harness->new( \%options );
 
