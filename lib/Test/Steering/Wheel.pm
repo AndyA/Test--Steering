@@ -122,6 +122,24 @@ sub _output_result {
         ++$self->{test_number_adjust}, $description );
 }
 
+=for private
+
+Output additional test failures if our subtest had problems.
+
+=cut
+
+sub _parser_postmortem {
+    my ($self, $parser) = @_;
+
+    $self->_output_result( 0, "Parse error: $_" )
+      for $parser->parse_errors;
+
+    my ( $wait, $exit ) = ( $parser->wait, $parser->exit );
+    $self->_output_result( 0,
+        "Non-zero status: exit=$exit, wait=$wait" )
+      if $exit || $wait;
+}
+
 =head2 C<< include_tests >>
 
 =cut
@@ -146,6 +164,7 @@ sub include_tests {
 
     my $printer = sub {
         my ( $type, $line ) = @_;
+        print "TAP version 13\n" unless $self->{started}++;
         if ( $type eq 'test' ) {
             $line =~ s/(\d+)/$1 + $self->{test_number_adjust}/e;
         }
@@ -181,6 +200,7 @@ sub include_tests {
             );
             $parser->callback(
                 EOF => sub {
+                    $self->_parser_postmortem( $parser );
                     $done->( $parser );
                 }
             );
