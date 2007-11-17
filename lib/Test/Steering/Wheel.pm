@@ -7,15 +7,15 @@ use Scalar::Util qw(refaddr);
 
 =head1 NAME
 
-Test::Steering::Wheel - Execute test scripts conditionally
+Test::Steering::Wheel - Execute tests and renumber the resulting TAP.
 
 =head1 VERSION
 
-This document describes Test::Steering::Wheel version 0.01
+This document describes Test::Steering::Wheel version 0.02
 
 =cut
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 =head1 SYNOPSIS
 
@@ -27,9 +27,16 @@ our $VERSION = '0.01';
 
 =head1 DESCRIPTION
 
+Behind the scenes in L<Test::Steering> is a singleton instance of
+C<Test::Steering::Wheel>.
+
+See L<Test::Steering> for more information.
+
 =head1 INTERFACE 
 
 =head2 C<< new >>
+
+Create a new C<Test::Steering::Wheel>.
 
 =cut
 
@@ -129,7 +136,7 @@ Output additional test failures if our subtest had problems.
 =cut
 
 sub _parser_postmortem {
-    my ($self, $parser) = @_;
+    my ( $self, $parser ) = @_;
 
     $self->_output_result( 0, "Parse error: $_" )
       for $parser->parse_errors;
@@ -141,6 +148,11 @@ sub _parser_postmortem {
 }
 
 =head2 C<< include_tests >>
+
+Run one or more tests. Wildcards will be expanded.
+
+    include_tests( 'xt/vms/*.t' ) if $^O eq 'VMS';
+    include_tests( 'xt/windows/*.t' ) if $^O =~ 'MSWin32';
 
 =cut
 
@@ -156,7 +168,7 @@ sub include_tests {
             %options = ( %options, %$t );
         }
         else {
-            push @real_tests, $t;
+            push @real_tests, glob $t;
         }
     }
 
@@ -219,6 +231,7 @@ sub end_plan {
     my $self = shift;
     if ( my $plan = $self->{test_number_adjust} ) {
         print "1..$plan\n";
+        $self->{test_number_adjust} = 0;
     }
 }
 
