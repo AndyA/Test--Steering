@@ -2,10 +2,12 @@ package Test::Steering;
 
 use warnings;
 use strict;
+use Test::Steering::Wheel;
+use Exporter;
 
 =head1 NAME
 
-Test::Steering - [One line description of module's purpose here]
+Test::Steering - Execute test scripts conditionally
 
 =head1 VERSION
 
@@ -14,18 +16,45 @@ This document describes Test::Steering version 0.01
 =cut
 
 our $VERSION = '0.01';
+our @ISA     = qw(Exporter);
+our @EXPORT;
+our $WHEEL_CLASS = 'Test::Steering::Wheel';
+
+BEGIN {
+    @EXPORT = qw(include_tests end_plan);
+    my $WHEEL;
+    for my $method ( @EXPORT ) {
+        no strict 'refs';
+        *{ __PACKAGE__ . '::' . $method } = sub {
+            return ( $WHEEL ||= _make_wheel() )->$method( @_ );
+        };
+    }
+}
 
 =head1 SYNOPSIS
 
     use Test::Steering;
-  
+
+    include_tests( 'xt/vms/*.t' ) if $^O eq 'VMS';
+    include_tests( 'xt/windows/*.t' ) if $^O =~ 'MSWin32';
+
 =head1 DESCRIPTION
 
 =head1 INTERFACE 
 
-=head2 C<< somfunc >>
+=head2 C<< include_tests >>
+
+=head2 C<< end_plan >>
 
 =cut
+
+sub _make_wheel {
+    return $WHEEL_CLASS->new;
+}
+
+END {
+    end_plan();
+}
 
 1;
 __END__

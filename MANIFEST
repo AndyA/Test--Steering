@@ -1,9 +1,10 @@
 Build.PL
 Changes
-MANIFEST
-Makefile.PL
-README
 lib/Test/Steering.pm
+lib/Test/Steering/Wheel.pm
+Makefile.PL
+MANIFEST
+README
 t/00.load.t
 t/pod-coverage.t
 t/pod.t
