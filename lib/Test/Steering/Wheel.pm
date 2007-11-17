@@ -168,9 +168,11 @@ sub include_tests {
             %options = ( %options, %$t );
         }
         else {
-            push @real_tests, glob $t;
+            push @real_tests, grep { !$self->{seen}->{$_} } glob $t;
         }
     }
+    
+    $self->{seen}->{$_}++ for @real_tests;
 
     my $harness = TAP::Harness->new( \%options );
 
