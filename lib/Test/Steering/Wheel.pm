@@ -135,6 +135,14 @@ sub _output_demux {
     );
 }
 
+sub _name_for_parser {
+    my $self   = shift;
+    my $parser = shift;
+    my $id     = refaddr $parser;
+    return $self->{parser_name}->{$id} unless @_;
+    return $self->{parser_name}->{$id} = shift;
+}
+
 # Like ok
 sub _output_result {
     my ( $self, $ok, $description ) = @_;
@@ -148,13 +156,22 @@ sub _output_result {
 sub _parser_postmortem {
     my ( $self, $parser ) = @_;
 
-    $self->_output_result( 0, "Parse error: $_" )
-      for $parser->parse_errors;
+    my $test = $self->_name_for_parser($parser);
+
+    my @errs = ();
+
+    push @errs, "$test: Parse error: $_" for $parser->parse_errors;
 
     my ( $wait, $exit ) = ( $parser->wait, $parser->exit );
-    $self->_output_result( 0,
-        "Non-zero status: exit=$exit, wait=$wait" )
+    push @errs, "$test: Non-zero status: exit=$exit, wait=$wait"
       if $exit || $wait;
+
+    if ( @errs ) {
+        $self->_output_result( 0, $_ ) for @errs;
+    }
+    else {
+        $self->_output_result( 1, "$test done" );
+    }
 }
 
 =head2 C<< include_tests >>
@@ -204,7 +221,10 @@ sub include_tests {
 
     $harness->callback(
         made_parser => sub {
-            my $parser = shift;
+            my ( $parser, $test ) = @_;
+            
+            $self->_name_for_parser( $parser, $test );
+            
             $parser->callback( plan    => sub { } );
             $parser->callback( version => sub { } );
             $parser->callback(
@@ -217,13 +237,13 @@ sub include_tests {
             $parser->callback(
                 ELSE => sub {
                     my $result = shift;
-                    $demux->( $parser, 'raw', $result->raw, "\n" );
+                    $demux->( $parser, 'raw', $result->raw . "\n" );
                 }
             );
             $parser->callback(
                 EOF => sub {
-                    $self->_parser_postmortem( $parser );
                     $done->( $parser );
+                    $self->_parser_postmortem( $parser );
                 }
             );
         }

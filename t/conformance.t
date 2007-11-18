@@ -2,133 +2,190 @@ use strict;
 use warnings;
 use Test::More;
 use Test::Steering::Wheel;
-use IO::Capture::Stdout;
+use IO::CaptureOutput qw(capture);
 use File::Spec;
-
-my @TEST_PATH = ( 't', 'sample-tests' );
 
 my @schedule = (
     {
-        args   => [ tp( 'simple' ) ],
-        expect => [
-            "TAP version 13\n",
-            "ok 1\n", "ok 2\n", "ok 3\n", "ok 4\n", "ok 5\n", "1..5\n",
+        args   => ['t/sample-tests/simple'],
+        stdout => [
+            "TAP version 13",
+            "ok 1", "ok 2", "ok 3", "ok 4", "ok 5",
+            "ok 6 t/sample-tests/simple done", "1..6"
         ],
+        stderr => []
     },
     {
-        args   => [ tp( 'descriptive' ) ],
-        expect => [
-            "TAP version 13\n",
-            "ok 1 Interlock activated\n",
-            "ok 2 Megathrusters are go\n",
-            "ok 3 Head formed\n",
-            "ok 4 Blazing sword formed\n",
-            "ok 5 Robeast destroyed\n",
-            "1..5\n"
+        args   => ['t/sample-tests/descriptive'],
+        stdout => [
+            "TAP version 13",
+            "ok 1 Interlock activated",
+            "ok 2 Megathrusters are go",
+            "ok 3 Head formed",
+            "ok 4 Blazing sword formed",
+            "ok 5 Robeast destroyed",
+            "ok 6 t/sample-tests/descriptive done",
+            "1..6"
         ],
+        stderr => []
     },
     {
-        args   => [ tp( 'simple' ), tp( 'simple_fail' ) ],
-        expect => [
-            "TAP version 13\n",
-            "ok 1\n",
-            "ok 2\n",
-            "ok 3\n",
-            "ok 4\n",
-            "ok 5\n",
-            "ok 6\n",
-            "not ok 7\n",
-            "ok 8\n",
-            "ok 9\n",
-            "not ok 10\n",
-            "1..10\n",
+        args =>
+          [ 't/sample-tests/simple', 't/sample-tests/simple_fail' ],
+        stdout => [
+            "TAP version 13",
+            "ok 1",
+            "ok 2",
+            "ok 3",
+            "ok 4",
+            "ok 5",
+            "ok 6 t/sample-tests/simple done",
+            "ok 7",
+            "not ok 8",
+            "ok 9",
+            "ok 10",
+            "not ok 11",
+            "ok 12 t/sample-tests/simple_fail done",
+            "1..12"
         ],
+        stderr => []
     },
     {
-        args   => [ tp( 'die' ) ],
-        expect => [
-            "not ok 1 Parse error: No plan found in TAP output\n",
-            "not ok 2 Non-zero status: exit=1, wait=256\n",
-            "1..2\n"
+        args   => ['t/sample-tests/die'],
+        stdout => [
+            "not ok 1 t/sample-tests/die: Parse error: No plan found in TAP output",
+            "not ok 2 t/sample-tests/die: Non-zero status: exit=1, wait=256",
+            "1..2"
         ],
+        stderr => []
     },
     {
-        args   => [ tp( 'simple_yaml' ) ],
-        expect => [
-            "TAP version 13\n",
-            "ok 1\n",
-            "ok 2\n",
-            "  ---\n  -\n    fnurk: skib\n    ponk: gleeb\n  -\n"
-              . "    bar: krup\n    foo: plink\n  ...",
-            "ok 3\n",
-            "ok 4\n",
-            "  ---\n  expected:\n    - 1\n    - 2\n    - 4\n  got:\n"
-              . "    - 1\n    - pong\n    - 4\n  ...",
-            "ok 5\n",
-            "1..5\n"
+        args   => ['t/sample-tests/simple_yaml'],
+        stdout => [
+            "TAP version 13",
+            "ok 1",
+            "ok 2",
+            "  ---",
+            "  -",
+            "    fnurk: skib",
+            "    ponk: gleeb",
+            "  -",
+            "    bar: krup",
+            "    foo: plink",
+            "  ...",
+            "ok 3",
+            "ok 4",
+            "  ---",
+            "  expected:",
+            "    - 1",
+            "    - 2",
+            "    - 4",
+            "  got:",
+            "    - 1",
+            "    - pong",
+            "    - 4",
+            "  ...",
+            "ok 5",
+            "ok 6 t/sample-tests/simple_yaml done",
+            "1..6"
         ],
+        stderr => []
     },
     {
-        args   => [ tp( 'no_nums' ) ],
-        expect => [
-            "TAP version 13\n",
-            "ok 1\n",
-            "ok 2\n",
-            "not ok 3\n",
-            "ok 4\n",
-            "ok 5\n",
-            "1..5\n"
+        args   => ['t/sample-tests/no_nums'],
+        stdout => [
+            "TAP version 13",
+            "ok 1", "ok 2", "not ok 3", "ok 4", "ok 5",
+            "ok 6 t/sample-tests/no_nums done", "1..6"
         ],
+        stderr => []
     },
     {
         args => [
-            tp( 'simple' ),
-            tp( 'simple_fail' ),
-            tp( 'die' ),
-            tp( 'simple_yaml' ),
-            tp( 'no_nums' )
+            't/sample-tests/simple', 't/sample-tests/simple_fail',
+            't/sample-tests/die',    't/sample-tests/simple_yaml',
+            't/sample-tests/no_nums'
         ],
-        expect => [
-            "TAP version 13\n",
-            "ok 1\n",
-            "ok 2\n",
-            "ok 3\n",
-            "ok 4\n",
-            "ok 5\n",
-            "ok 6\n",
-            "not ok 7\n",
-            "ok 8\n",
-            "ok 9\n",
-            "not ok 10\n",
-            "not ok 11 Parse error: No plan found in TAP output\n",
-            "not ok 12 Non-zero status: exit=1, wait=256\n",
-            "ok 13\n",
-            "ok 14\n",
-            "  ---\n  -\n    fnurk: skib\n    ponk: gleeb\n  -\n"
-              . "    bar: krup\n    foo: plink\n  ...",
-            "ok 15\n",
-            "ok 16\n",
-            "  ---\n  expected:\n    - 1\n    - 2\n    - 4\n  got:\n"
-              . "    - 1\n    - pong\n    - 4\n  ...",
-            "ok 17\n",
-            "ok 18\n",
-            "ok 19\n",
-            "not ok 20\n",
-            "ok 21\n",
-            "ok 22\n",
-            "1..22\n"
+        stdout => [
+            "TAP version 13",
+            "ok 1",
+            "ok 2",
+            "ok 3",
+            "ok 4",
+            "ok 5",
+            "ok 6 t/sample-tests/simple done",
+            "ok 7",
+            "not ok 8",
+            "ok 9",
+            "ok 10",
+            "not ok 11",
+            "ok 12 t/sample-tests/simple_fail done",
+            "not ok 13 t/sample-tests/die: Parse error: No plan found in TAP output",
+            "not ok 14 t/sample-tests/die: Non-zero status: exit=1, wait=256",
+            "ok 15",
+            "ok 16",
+            "  ---",
+            "  -",
+            "    fnurk: skib",
+            "    ponk: gleeb",
+            "  -",
+            "    bar: krup",
+            "    foo: plink",
+            "  ...",
+            "ok 17",
+            "ok 18",
+            "  ---",
+            "  expected:",
+            "    - 1",
+            "    - 2",
+            "    - 4",
+            "  got:",
+            "    - 1",
+            "    - pong",
+            "    - 4",
+            "  ...",
+            "ok 19",
+            "ok 20 t/sample-tests/simple_yaml done",
+            "ok 21",
+            "ok 22",
+            "not ok 23",
+            "ok 24",
+            "ok 25",
+            "ok 26 t/sample-tests/no_nums done",
+            "1..26"
         ],
+        stderr => []
     },
     {
-        args   => [ tp( 'simple' ), tp( 'simple' ) ],
-        expect => [
-            "TAP version 13\n",
-            "ok 1\n", "ok 2\n", "ok 3\n", "ok 4\n", "ok 5\n", "1..5\n",
+        args   => [ 't/sample-tests/simple', 't/sample-tests/simple' ],
+        stdout => [
+            "TAP version 13",
+            "ok 1", "ok 2", "ok 3", "ok 4", "ok 5",
+            "ok 6 t/sample-tests/simple done", "1..6"
         ],
-    },
+        stderr => []
+    }
 );
 
-plan tests => @schedule * 2;
+plan tests => @schedule * 3;
+
+sub are_lines($$$) {
+    my ( $lines, $want, $desc ) = @_;
+    my @lines = split /\n/, $lines;
+    unless ( is_deeply( \@lines, $want, $desc ) ) {
+        use Data::Dumper;
+        diag(
+            Data::Dumper->new(
+                [
+                    {
+                        got  => \@lines,
+                        want => $want,
+                    }
+                ]
+              )->Terse( 1 )->Purity( 1 )->Useqq( 1 )->Dump
+        );
+    }
+}
 
 for my $test ( @schedule ) {
     my $wheel = Test::Steering::Wheel->new;
@@ -137,26 +194,15 @@ for my $test ( @schedule ) {
     my @args = @{ $test->{args} };
     my $desc = join( ', ', grep { !ref $_ } @args );
 
-    my $capture = IO::Capture::Stdout->new;
-    $capture->start;
-    $wheel->include_tests( @args );
-    $wheel->end_plan;
-    $capture->stop;
-    my @got = $capture->read;
-    unless ( is_deeply \@got, $test->{expect}, "$desc: Output matches" )
-    {
-        use Data::Dumper;
-        diag(
-            Data::Dumper->new(
-                [
-                    {
-                        got    => \@got,
-                        expect => $test->{expect}
-                    }
-                ]
-              )->Terse( 1 )->Purity( 1 )->Useqq( 1 )->Dump
-        );
-    }
-}
+    capture(
+        sub {
+            $wheel->include_tests( @args );
+            $wheel->end_plan;
+        },
+        \my $stdout,
+        \my $stderr
+    );
 
-sub tp { File::Spec->catfile( @TEST_PATH, $_[0] ) }
+    are_lines $stdout, $test->{stdout}, "$desc: stdout OK";
+    are_lines $stderr, $test->{stderr}, "$desc: stderr OK";
+}

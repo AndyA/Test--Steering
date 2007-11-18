@@ -2,7 +2,6 @@ package Test::Steering;
 
 use warnings;
 use strict;
-# use Test::Steering::Wheel;
 use Exporter;
 use Carp;
 
@@ -134,7 +133,13 @@ C<Test::Steering::Wheel>. Use this option to use a custom subclass.
 
 =cut
 
-# Subclass import to allow options
+sub _load {
+    my $class = shift;
+    unless ( $INC{$class} || eval "use $class; 1" ) {
+        croak "Can't load $class: $@";
+    }
+    return $class;
+}
 
 {
     my $wheel_class = 'Test::Steering::Wheel';
@@ -147,11 +152,7 @@ C<Test::Steering::Wheel>. Use this option to use a custom subclass.
 
         $wheel_class = delete $opts{wheel} || $wheel_class;
 
-        unless ( $INC{$wheel_class} || eval "use $wheel_class; 1" ) {
-            croak "Can't load $wheel_class: $@";
-        }
-
-        my %valid = map { $_ => 1 } $wheel_class->option_names;
+        my %valid = map { $_ => 1 } _load( $wheel_class )->option_names;
         my @bad = grep { !$valid{$_} } keys %opts;
         croak "Unknown option(s): ", join ', ', sort @bad if @bad;
 
@@ -162,7 +163,7 @@ C<Test::Steering::Wheel>. Use this option to use a custom subclass.
     }
 
     sub _make_wheel {
-        return $wheel_class->new( %options );
+        return _load( $wheel_class )->new( %options );
     }
 }
 
