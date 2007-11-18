@@ -1,28 +1,31 @@
 use strict;
 use warnings;
 use Test::More;
-use Test::Steering;
 
-package Fake::Wheel;
+BEGIN {
 
-our @call_log = ();
-our $AUTOLOAD;
+    package Fake::Wheel;
 
-sub new { bless {}, shift }
+    our @call_log = ();
+    our $AUTOLOAD;
 
-sub AUTOLOAD {
-    my $self = shift;
+    sub new { bless {}, shift }
+    sub option_names { return }
 
-    my $name = $AUTOLOAD;
-    $name =~ s/.*://;    # strip fully-qualified portion
+    sub AUTOLOAD {
+        my $self = shift;
 
-    push @call_log, [ $name, @_ ];
-    return $name x 2;
+        my $name = $AUTOLOAD;
+        $name =~ s/.*://;    # strip fully-qualified portion
+
+        push @call_log, [ $name, @_ ];
+        return $name x 2;
+    }
 }
 
-package main;
+use Test::Steering wheel => 'Fake::Wheel';
 
-$Test::Steering::WHEEL_CLASS = 'Fake::Wheel';
+package main;
 
 plan tests => @Test::Steering::EXPORT * 1 + 1;
 

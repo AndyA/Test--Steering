@@ -2,6 +2,7 @@ package Test::Steering::Wheel;
 
 use warnings;
 use strict;
+use Carp;
 use TAP::Harness;
 use Scalar::Util qw(refaddr);
 
@@ -40,28 +41,37 @@ Create a new C<Test::Steering::Wheel>.
 
 =cut
 
-sub new {
-    my $class = shift;
-    my %args  = @_;
+{
+    my %DEFAULTS = ( add_prefix => 0, announce => 0 );
 
-    my $self = bless { test_number_adjust => 0, }, $class;
-    return $self;
+    sub new {
+        my $class = shift;
+        croak "Must supply an even number of arguments" if @_ % 1;
+        my %args = ( %DEFAULTS, @_ );
+
+        my $self = bless { test_number_adjust => 0, }, $class;
+        return $self;
+    }
+
+    # Documentation lower down
+    sub option_names {
+        my $class = shift;
+        return sort keys %DEFAULTS;
+    }
 }
 
-=for private
-
-Output demultiplexer. Handles output associated with multiple parsers.
-If parsers output sequentially no buffering is done. If, however, output
-from multiple parsers is interleaved output from the first encountered
-will be echoed directly and output from all the others will be buffered.
-
-After a parser finishes (calls $done) the next parser to generate output
-will have its buffer flushed and will start output directly.
-
-The upshot of all this is that we output from multiple parsers doing the
-minimum amount of buffering necessary to keep per-parser output ordered.
-
-=cut
+# Output demultiplexer. Handles output associated with multiple parsers.
+# If parsers output sequentially no buffering is done. If, however,
+# output from multiple parsers is interleaved output from the first
+# encountered will be echoed directly and output from all the others
+# will be buffered.
+#
+# After a parser finishes (calls $done) the next parser to generate
+# output will have its buffer flushed and will start output directly.
+#
+# The upshot of all this is that we output from multiple parsers doing
+# the minimum amount of buffering necessary to keep per-parser output
+# ordered.
 
 sub _output_demux {
     my ( $self, $printer, $complete ) = @_;
@@ -129,11 +139,7 @@ sub _output_result {
         ++$self->{test_number_adjust}, $description );
 }
 
-=for private
-
-Output additional test failures if our subtest had problems.
-
-=cut
+# Output additional test failures if our subtest had problems.
 
 sub _parser_postmortem {
     my ( $self, $parser ) = @_;
@@ -168,11 +174,9 @@ sub include_tests {
             %options = ( %options, %$t );
         }
         else {
-            push @real_tests, grep { !$self->{seen}->{$_} } glob $t;
+            push @real_tests, grep { !$self->{seen}->{$_}++ } glob $t;
         }
     }
-    
-    $self->{seen}->{$_}++ for @real_tests;
 
     my $harness = TAP::Harness->new( \%options );
 
@@ -227,6 +231,8 @@ sub include_tests {
 
 =head2 C<end_plan>
 
+Output the trailing plan.
+
 =cut
 
 sub end_plan {
@@ -237,12 +243,34 @@ sub end_plan {
     }
 }
 
+=head2 C<< tests_run >>
+
+Get a list of tests that have been run.
+
+    my @tests = $wheel->tests_run();
+
+=cut
+
+sub tests_run {
+    my $self = shift;
+    return sort keys %{ $self->{seen} || {} };
+}
+
+=head2 C<< option_names >>
+
+Get the names of the supported options to C<new>. Used by L<Test::Steering>
+to validate its arguments.
+
+=cut
+
 1;
+
 __END__
 
 =head1 CONFIGURATION AND ENVIRONMENT
   
-Test::Steering::Wheel requires no configuration files or environment variables.
+Test::Steering::Wheel requires no configuration files or environment
+variables.
 
 =head1 DEPENDENCIES
 

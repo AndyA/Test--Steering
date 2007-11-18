@@ -118,7 +118,14 @@ my @schedule = (
             "ok 22\n",
             "1..22\n"
         ],
-    }
+    },
+    {
+        args   => [ tp( 'simple' ), tp( 'simple' ) ],
+        expect => [
+            "TAP version 13\n",
+            "ok 1\n", "ok 2\n", "ok 3\n", "ok 4\n", "ok 5\n", "1..5\n",
+        ],
+    },
 );
 
 plan tests => @schedule * 2;

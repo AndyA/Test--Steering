@@ -4,6 +4,7 @@ use warnings;
 use strict;
 use Test::Steering::Wheel;
 use Exporter;
+use Carp;
 
 =head1 NAME
 
@@ -18,10 +19,9 @@ This document describes Test::Steering version 0.02
 our $VERSION = '0.02';
 our @ISA     = qw(Exporter);
 our @EXPORT;
-our $WHEEL_CLASS = 'Test::Steering::Wheel';
 
 BEGIN {
-    @EXPORT = qw(include_tests end_plan);
+    @EXPORT = qw(include_tests end_plan tests_run);
     my $WHEEL;
     for my $method ( @EXPORT ) {
         no strict 'refs';
@@ -98,10 +98,54 @@ Multiple options hashes may be provided; they will be concatenated.
 Output the trailing plan. Normally there is no need to call C<end_plan>
 directly: it is called on exit.
 
+=head2 C<< tests_run >>
+
+Get a list of tests that have been run.
+
+    my @tests = tests_run();
+
+=head1 OPTIONS
+
+A number of options may be passed.
+
+    use Test::Steering wheel => 'My::Wheel';
+
+=over
+
+=item C<wheel>
+
+The name of the support class that will be used. Defaults to
+C<Test::Steering::Wheel>. Use this option to load a custom subclass.
+
+=back
+
 =cut
 
-sub _make_wheel {
-    return $WHEEL_CLASS->new;
+# Subclass import to allow options
+
+{
+    my $wheel_class = 'Test::Steering::Wheel';
+    my %options;
+
+    sub import {
+        my $class = shift;
+        croak "Must supply an even number of arguments" if @_ % 1;
+        my %opts = @_;
+
+        $wheel_class = delete $opts{wheel} || $wheel_class;
+        my %valid = map { $_ => 1 } $wheel_class->option_names;
+        my @bad = grep { !$valid{$_} } keys %opts;
+        croak "Unknown option(s): ", join ', ', sort @bad if @bad;
+
+        %options = %opts;
+
+        # We don't pass any args downwards
+        $class->export_to_level( 1 );
+    }
+
+    sub _make_wheel {
+        return $wheel_class->new( %options );
+    }
 }
 
 END {
