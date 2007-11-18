@@ -2,7 +2,7 @@ package Test::Steering;
 
 use warnings;
 use strict;
-use Test::Steering::Wheel;
+# use Test::Steering::Wheel;
 use Exporter;
 use Carp;
 
