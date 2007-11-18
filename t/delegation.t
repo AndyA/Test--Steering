@@ -21,6 +21,9 @@ BEGIN {
         push @call_log, [ $name, @_ ];
         return $name x 2;
     }
+
+    # Pretend we were loaded.
+    $INC{'Fake::Wheel'} = $0;
 }
 
 use Test::Steering wheel => 'Fake::Wheel';
