@@ -42,7 +42,11 @@ Create a new C<Test::Steering::Wheel>.
 =cut
 
 {
-    my %DEFAULTS = ( add_prefix => 0, announce => 0 );
+    my %DEFAULTS = (
+        add_prefix => 0,
+        announce   => 0,
+        defaults   => {},
+    );
 
     sub new {
         my $class = shift;

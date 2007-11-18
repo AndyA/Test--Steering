@@ -112,10 +112,23 @@ A number of options may be passed.
 
 =over
 
+=item C<add_prefix>
+
+Add the name of the current test as a prefix to each result's
+description.
+
+=item C<announce>
+
+Output a diagnostic naming each new subtest
+
+=item C<defaults>
+
+A hash containing default options for C<include_tests>.
+
 =item C<wheel>
 
 The name of the support class that will be used. Defaults to
-C<Test::Steering::Wheel>. Use this option to load a custom subclass.
+C<Test::Steering::Wheel>. Use this option to use a custom subclass.
 
 =back
 
@@ -133,6 +146,11 @@ C<Test::Steering::Wheel>. Use this option to load a custom subclass.
         my %opts = @_;
 
         $wheel_class = delete $opts{wheel} || $wheel_class;
+
+        unless ( $INC{$wheel_class} || eval "use $wheel_class; 1" ) {
+            croak "Can't load $wheel_class: $@";
+        }
+
         my %valid = map { $_ => 1 } $wheel_class->option_names;
         my @bad = grep { !$valid{$_} } keys %opts;
         croak "Unknown option(s): ", join ', ', sort @bad if @bad;
