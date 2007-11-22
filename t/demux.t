@@ -8,7 +8,7 @@ isa_ok $wheel, 'Test::Steering::Wheel';
 
 my @got     = ();
 my $printer = sub {
-    my ( $type, $line ) = @_;
+    my ( $parser, $type, $line ) = @_;
     push @got, $line;
 };
 

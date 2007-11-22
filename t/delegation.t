@@ -26,9 +26,9 @@ BEGIN {
     $INC{'Fake::Wheel'} = $0;
 }
 
-use Test::Steering wheel => 'Fake::Wheel';
-
 package main;
+
+use Test::Steering wheel => 'Fake::Wheel';
 
 plan tests => @Test::Steering::EXPORT * 1 + 1;
 
