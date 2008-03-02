@@ -11,11 +11,11 @@ Test::Steering - Execute test scripts conditionally
 
 =head1 VERSION
 
-This document describes Test::Steering version 0.02
+This document describes Test::Steering version 0.03
 
 =cut
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 our @ISA     = qw(Exporter);
 our @EXPORT;
 
